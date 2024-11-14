@@ -3,14 +3,14 @@
 
 	type State = 'start' | 'playing' | 'paused' | 'won' | 'lost'
 
-	let state: State = 'start'
+	let gameState: State = $state('start')
 	let size = 20
-	let grid = createGrid()
-	let maxMatches = grid.length / 2
-	let selected: number[] = []
-	let matches: string[] = []
-	let timerId: number | null = null
-	let time = 60
+	let maxMatches = $state(0)
+	let grid = $state(createGrid())
+	let selected: number[] = $state([])
+	let matches: string[] = $state([])
+	let timerId: number | null = $state(null)
+	let time = $state(60)
 
 	function createGrid() {
 		// only want unique cards
@@ -25,7 +25,10 @@
 		}
 
 		// duplicate and shuffle cards
-		return shuffle([...cards, ...cards])
+		const shuffled = shuffle([...cards, ...cards])
+    maxMatches = shuffled.length / 2
+
+    return shuffled;
 	}
 
 	function shuffle<Items>(array: Items[]) {
@@ -34,13 +37,15 @@
 
 	function startGameTimer() {
 		function countdown() {
-			state !== 'paused' && (time -= 1)
+			gameState !== 'paused' && (time -= 1)
+		  time === 0 && gameLost()
 		}
 		timerId = setInterval(countdown, 1000)
 	}
 
 	function selectCard(cardIndex: number) {
 		selected = selected.concat(cardIndex)
+    if (selected.length === 2) matchCards()
 	}
 
 	function matchCards() {
@@ -49,6 +54,7 @@
 
 		if (grid[first] === grid[second]) {
 			matches = matches.concat(grid[first])
+      if (maxMatches === matches.length) gameWon()
 		}
 
 		// clear selected
@@ -57,12 +63,12 @@
 
 	function pauseGame(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
-			switch (state) {
+			switch (gameState) {
 				case 'playing':
-					state = 'paused'
+					gameState = 'paused'
 					break
 				case 'paused':
-					state = 'playing'
+					gameState = 'playing'
 					break
 			}
 		}
@@ -71,45 +77,41 @@
 	function resetGame() {
 		timerId && clearInterval(timerId)
 		grid = createGrid()
-		maxMatches = grid.length / 2
 		selected = []
 		matches = []
 		timerId = null
 		time = 60
 	}
 
+  function gameStart() {
+    gameState = 'playing'
+			//	in case you pause the game
+			!timerId && startGameTimer()
+  }
+
 	function gameWon() {
-		state = 'won'
+		gameState = 'won'
 		resetGame()
 	}
 
 	function gameLost() {
-		state = 'lost'
+		gameState = 'lost'
 		resetGame()
 	}
-
-	$: if (state === 'playing') {
-		//	in case you pause the game
-		!timerId && startGameTimer()
-	}
-
-	$: selected.length === 2 && matchCards()
-	$: maxMatches === matches.length && gameWon()
-	$: time === 0 && gameLost()
 </script>
 
-<svelte:window on:keydown={pauseGame} />
+<svelte:window onkeydown={pauseGame} />
 
-{#if state === 'start'}
+{#if gameState === 'start'}
 	<h1>Matching game</h1>
-	<button on:click={() => (state = 'playing')}>Play</button>
+	<button onclick={gameStart}>Play</button>
 {/if}
 
-{#if state === 'paused'}
+{#if gameState === 'paused'}
 	<h1>Game paused</h1>
 {/if}
 
-{#if state === 'playing'}
+{#if gameState === 'playing'}
 	<h1 class="timer" class:pulse={time <= 10}>
 		{time}
 	</h1>
@@ -132,7 +134,7 @@
 				class:selected={isSelected}
 				class:flip={isSelectedOrMatch}
 				disabled={isSelectedOrMatch}
-				on:click={() => selectCard(cardIndex)}
+				onclick={() => selectCard(cardIndex)}
 			>
 				<div class="back" class:match>
 					{card}
@@ -142,14 +144,14 @@
 	</div>
 {/if}
 
-{#if state === 'lost'}
+{#if gameState === 'lost'}
 	<h1>You lost! 💩</h1>
-	<button on:click={() => (state = 'playing')}>Play again</button>
+	<button onclick={gameStart}>Play again</button>
 {/if}
 
-{#if state === 'won'}
+{#if gameState === 'won'}
 	<h1>You win! 🎉</h1>
-	<button on:click={() => (state = 'playing')}>Play again</button>
+	<button onclick={gameStart}>Play again</button>
 {/if}
 
 <style>
