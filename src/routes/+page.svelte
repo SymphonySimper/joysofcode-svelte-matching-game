@@ -1,102 +1,102 @@
 <script lang="ts">
-	import { emoji } from './emoji'
+	import { emoji } from './emoji';
 
-	type State = 'start' | 'playing' | 'paused' | 'won' | 'lost'
+	type State = 'start' | 'playing' | 'paused' | 'won' | 'lost';
 
-	let gameState: State = $state('start')
-	let size = 20
-	let maxMatches = $state(0)
-	let grid = $state(createGrid())
-	let selected: number[] = $state([])
-	let matches: string[] = $state([])
-	let timerId: number | null = $state(null)
-	let time = $state(60)
+	let gameState: State = $state('start');
+	let size = 20;
+	let maxMatches = $state(0);
+	let grid = $state(createGrid());
+	let selected: number[] = $state([]);
+	let matches: string[] = $state([]);
+	let timerId: number | null = $state(null);
+	let time = $state(60);
 
 	function createGrid() {
 		// only want unique cards
-		let cards = new Set<string>()
+		let cards = new Set<string>();
 		// half because we duplicate the cards
-		let maxSize = size / 2
+		let maxSize = size / 2;
 
 		while (cards.size < maxSize) {
 			// pick random emoji
-			const randomIndex = Math.floor(Math.random() * emoji.length)
-			cards.add(emoji[randomIndex])
+			const randomIndex = Math.floor(Math.random() * emoji.length);
+			cards.add(emoji[randomIndex]);
 		}
 
 		// duplicate and shuffle cards
-		const shuffled = shuffle([...cards, ...cards])
-    maxMatches = shuffled.length / 2
+		const shuffled = shuffle([...cards, ...cards]);
+		maxMatches = shuffled.length / 2;
 
-    return shuffled;
+		return shuffled;
 	}
 
 	function shuffle<Items>(array: Items[]) {
-		return array.sort(() => Math.random() - 0.5)
+		return array.sort(() => Math.random() - 0.5);
 	}
 
 	function startGameTimer() {
 		function countdown() {
-			gameState !== 'paused' && (time -= 1)
-		  time === 0 && gameLost()
+			gameState !== 'paused' && (time -= 1);
+			time === 0 && gameLost();
 		}
-		timerId = setInterval(countdown, 1000)
+		timerId = setInterval(countdown, 1000);
 	}
 
 	function selectCard(cardIndex: number) {
-		selected = selected.concat(cardIndex)
-    if (selected.length === 2) matchCards()
+		selected = selected.concat(cardIndex);
+		if (selected.length === 2) matchCards();
 	}
 
 	function matchCards() {
 		// array destructuring can have any name for the values
-		const [first, second] = selected
+		const [first, second] = selected;
 
 		if (grid[first] === grid[second]) {
-			matches = matches.concat(grid[first])
-      if (maxMatches === matches.length) gameWon()
+			matches = matches.concat(grid[first]);
+			if (maxMatches === matches.length) gameWon();
 		}
 
 		// clear selected
-		setTimeout(() => (selected = []), 300)
+		setTimeout(() => (selected = []), 300);
 	}
 
 	function pauseGame(e: KeyboardEvent) {
 		if (e.key === 'Escape') {
 			switch (gameState) {
 				case 'playing':
-					gameState = 'paused'
-					break
+					gameState = 'paused';
+					break;
 				case 'paused':
-					gameState = 'playing'
-					break
+					gameState = 'playing';
+					break;
 			}
 		}
 	}
 
 	function resetGame() {
-		timerId && clearInterval(timerId)
-		grid = createGrid()
-		selected = []
-		matches = []
-		timerId = null
-		time = 60
+		timerId && clearInterval(timerId);
+		grid = createGrid();
+		selected = [];
+		matches = [];
+		timerId = null;
+		time = 60;
 	}
 
-  function gameStart() {
-    gameState = 'playing'
-			//	in case you pause the game
-			!timerId && startGameTimer()
-  }
+	function gameStart() {
+		gameState = 'playing';
+		//	in case you pause the game
+		!timerId && startGameTimer();
+	}
 
 	function gameWon() {
-		gameState = 'won'
-		resetGame()
+		gameState = 'won';
+		resetGame();
 	}
 
 	function gameLost() {
-		gameState = 'lost'
-		resetGame()
+		gameState = 'lost';
+		resetGame();
 	}
 </script>
 
@@ -125,8 +125,7 @@
 	<div class="cards">
 		{#each grid as card, cardIndex}
 			{@const isSelected = selected.includes(cardIndex)}
-			{@const isSelectedOrMatch =
-				selected.includes(cardIndex) || matches.includes(card)}
+			{@const isSelectedOrMatch = selected.includes(cardIndex) || matches.includes(card)}
 			{@const match = matches.includes(card)}
 
 			<button
